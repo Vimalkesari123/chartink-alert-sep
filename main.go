@@ -135,7 +135,7 @@ func main() {
 	http.HandleFunc("/chartink", handleWebhook)
 	http.HandleFunc("/telegram", handleTelegram)
 	fileServer := http.FileServer(http.Dir("src/main/resources/static"))
-http.Handle("/", fileServer)
+	http.Handle("/", fileServer)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -400,13 +400,48 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 
 	// /more
 	if strings.HasPrefix(text, "/more") {
-		go sendTelegram(chatIDStr, "⚙️ *Other Actions*\n\n/newuid - Rotate URL\n/unlink - Delete account")
+		go sendTelegram(chatIDStr, "⚙️ *Other Actions*\n\n/newuid - Rotate URL\n/unlink - Delete account\n/support <message> - Contact support")
+		return
+	}
+
+	// /support <message> (Available to all users)
+	if strings.HasPrefix(text, "/support") {
+		query := strings.TrimSpace(strings.TrimPrefix(text, "/support"))
+		if query == "" {
+			go sendTelegram(chatIDStr, "⚠️ Please provide a message after `/support`.\nExample:\n`/support How do I setup multiple scanners?`")
+			return
+		}
+		if adminChatID != "" {
+			adminMsg := fmt.Sprintf("📩 *New Support Request*\n• From Chat ID: `%s`\n\n%s\n\n👉 _Reply with:_ `/reply %s <your message>`", chatIDStr, query, chatIDStr)
+			go sendTelegram(adminChatID, adminMsg)
+		}
+		go sendTelegram(chatIDStr, "✅ Your support request has been submitted. We will reply directly inside this chat!")
 		return
 	}
 
 	// Admin commands
-	// Admin commands
 	if isAdmin {
+		if strings.HasPrefix(text, "/reply") {
+			parts := strings.Fields(text)
+			if len(parts) < 3 {
+				go sendTelegram(chatIDStr, "⚠️ Usage: `/reply <chat_id> <message>`")
+				return
+			}
+			targetChat := strings.TrimSpace(parts[1])
+
+			idx := strings.Index(text, parts[1])
+			replyMsg := strings.TrimSpace(text[idx+len(parts[1]):])
+
+			if replyMsg == "" {
+				go sendTelegram(chatIDStr, "⚠️ Message cannot be empty.")
+				return
+			}
+
+			go sendTelegram(targetChat, fmt.Sprintf("💬 *Support Response:*\n\n%s", replyMsg))
+			go sendTelegram(chatIDStr, fmt.Sprintf("✅ Reply sent to `%s`", targetChat))
+			return
+		}
+
 		if strings.HasPrefix(text, "/adminstats") {
 			var totalUsers int
 			var todayAlerts int
@@ -601,35 +636,35 @@ func buildMessage(body string) string {
 				}
 			}
 			// NEW - handles both trigger_prices (Chartink) and trigger_price (TradingView)
-price := ""
-if v, ok := raw["trigger_prices"]; ok {
-    price = fmt.Sprintf("%v", v)
-} else if v, ok := raw["trigger_price"]; ok {
-    price = fmt.Sprintf("%v", v)
-}
-if symbol != "" {
-    if price != "" {
-        stockData = symbol + " @ " + price
-    } else {
-        stockData = symbol
-    }
-}
+			price := ""
+			if v, ok := raw["trigger_prices"]; ok {
+				price = fmt.Sprintf("%v", v)
+			} else if v, ok := raw["trigger_price"]; ok {
+				price = fmt.Sprintf("%v", v)
+			}
+			if symbol != "" {
+				if price != "" {
+					stockData = symbol + " @ " + price
+				} else {
+					stockData = symbol
+				}
+			}
 
-// Also show stocks with prices side by side if both available
-if triggeredStocks != "" && price != "" {
-    stocks := strings.Split(triggeredStocks, ",")
-    prices := strings.Split(price, ",")
-    var combined []string
-    for i, s := range stocks {
-        s = strings.TrimSpace(s)
-        if i < len(prices) {
-            combined = append(combined, s+" @ "+strings.TrimSpace(prices[i]))
-        } else {
-            combined = append(combined, s)
-        }
-    }
-    triggeredStocks = strings.Join(combined, ", ")
-}
+			// Also show stocks with prices side by side if both available
+			if triggeredStocks != "" && price != "" {
+				stocks := strings.Split(triggeredStocks, ",")
+				prices := strings.Split(price, ",")
+				var combined []string
+				for i, s := range stocks {
+					s = strings.TrimSpace(s)
+					if i < len(prices) {
+						combined = append(combined, s+" @ "+strings.TrimSpace(prices[i]))
+					} else {
+						combined = append(combined, s)
+					}
+				}
+				triggeredStocks = strings.Join(combined, ", ")
+			}
 			for _, key := range []string{"scan_name", "alert_name", "title"} {
 				if v, ok := raw[key]; ok && fmt.Sprintf("%v", v) != "" {
 					scanName = fmt.Sprintf("%v", v)
