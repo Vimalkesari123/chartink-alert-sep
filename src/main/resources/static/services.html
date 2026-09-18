@@ -4,7 +4,9 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Other Premium Services | notifyu.me</title>
+    <title>Premium Subscriptions & Trading Tools | NotifyU</title>
+    <meta name="description" content="Browse verified discount subscriptions for LinkedIn Premium, Coursera Plus, and FxReplay Pro backtesting tools. Instant Telegram delivery.">
+    <link rel="canonical" href="https://notifyu.me/services.html">
     <style>
         :root {
             --bg-main: #ffffff;
@@ -13,17 +15,19 @@
             --text-dim: #475569;
             --accent-pink: #ff69b4;
             --accent-blue: #38bdf8;
+            --fx-blue: #2563eb;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-main); color: var(--text-main); line-height: 1.6; }
 
-        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+        .container { max-width: 960px; margin: 0 auto; padding: 2rem; }
 
-        nav { padding: 1rem 0 3rem; display: flex; align-items: center; }
+        nav { padding: 1rem 0 2rem; display: flex; align-items: center; }
         .back-home { color: var(--text-dim); text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: color 0.2s; }
         .back-home:hover { color: var(--accent-pink); }
 
-        h1 { margin-bottom: 3rem; font-size: 2.5rem; text-align: center; font-weight: 800; letter-spacing: -0.02em; }
+        h1 { margin-bottom: 0.5rem; font-size: 2.5rem; text-align: center; font-weight: 800; letter-spacing: -0.02em; }
+        .subtitle { text-align: center; color: var(--text-dim); margin-bottom: 3rem; font-size: 1.05rem; }
 
         .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
 
@@ -36,6 +40,8 @@
             transition: all 0.3s ease;
             border: 1px solid #f1f5f9;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
         }
 
         .service-card:hover {
@@ -44,7 +50,6 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        /* Adjusted image display container */
         .service-img {
             width: 100%;
             height: 180px;
@@ -53,17 +58,50 @@
             align-items: center;
             justify-content: center;
             background-color: var(--bg-offset);
+            position: relative;
         }
 
         .service-img img {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Keeps image proportions clean */
+            object-fit: cover;
         }
 
-        .service-info { padding: 1.5rem; text-align: center; }
+        /* Stylized banner fallback for FxReplay */
+        .fxreplay-banner {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0b1120 0%, #1e293b 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            border-bottom: 2px solid var(--fx-blue);
+        }
+
+        .fxreplay-banner .title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+        }
+
+        .fxreplay-banner .tag {
+            background: rgba(37, 99, 235, 0.3);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.4);
+            padding: 3px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .service-info { padding: 1.5rem; text-align: center; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
         .service-info h3 { margin-bottom: 0.5rem; color: var(--text-main); font-size: 1.25rem; }
         .service-info p { color: var(--text-dim); font-size: 0.95rem; }
+        .service-info .price-tag { margin-top: 0.5rem; font-weight: 700; color: #0284c7; font-size: 0.95rem; }
     </style>
 </head>
 <body>
@@ -73,25 +111,45 @@
     </nav>
 
     <h1>Premium Services</h1>
+    <p class="subtitle">Verified upgrade passes and subscription deals delivered via Telegram.</p>
 
     <div class="services-grid">
+        <!-- LinkedIn Premium -->
         <a href="/linkedin-premium.html" class="service-card">
             <div class="service-img">
-                <img src="/linkedin-banner.png" alt="LinkedIn Premium">
+                <img src="/linkedin-banner.png" alt="LinkedIn Premium" width="300" height="180">
             </div>
             <div class="service-info">
                 <h3>LinkedIn Premium</h3>
-                <p>Career Plan - 3 Months Access</p>
+                <p>Career & Business - 6 Months Access</p>
+                <div class="price-tag">Starting at ₹1,499</div>
             </div>
         </a>
 
+        <!-- Coursera Plus -->
         <a href="/coursera-plus.html" class="service-card">
             <div class="service-img">
-                <img src="/coursera-banner.png" alt="Coursera Plus">
+                <img src="/coursera-banner.png" alt="Coursera Plus" width="300" height="180">
             </div>
             <div class="service-info">
                 <h3>Coursera Plus</h3>
-                <p>1-Year Access (1-Month Warranty)</p>
+                <p>1-Year Unlimited Certifications</p>
+                <div class="price-tag">₹2,999 / Year</div>
+            </div>
+        </a>
+
+        <!-- FxReplay Pro -->
+        <a href="/fxreplay-pro.html" class="service-card">
+            <div class="service-img">
+                <div class="fxreplay-banner">
+                    <div class="title">FxReplay Pro</div>
+                    <div class="tag">⚡ 5-Day Backtesting Pass</div>
+                </div>
+            </div>
+            <div class="service-info">
+                <h3>FxReplay Pro</h3>
+                <p>Unlimited Backtesting & 1s Replay</p>
+                <div class="price-tag">₹149 / $2 USD (5 Days)</div>
             </div>
         </a>
     </div>
