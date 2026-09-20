@@ -39,7 +39,6 @@ var (
 	userCacheMutex sync.RWMutex
 )
 
-// FIX 1: Proper cryptographically secure UID and Key generation
 const uidAlphabet = "abcdefghjklmnpqrstuvwxyz23456789"
 const keyAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -132,7 +131,10 @@ func main() {
 		}
 	}()
 
-	http.HandleFunc("/chartink", handleWebhook)
+	// Endpoints
+	http.HandleFunc("/chartink", handleWebhook)          // Untouched Chartink Handler
+	http.HandleFunc("/tradingview", handleTradingView)  // Dedicated TradingView Handler
+	http.HandleFunc("/webhook", handleUniversalWebhook) // Universal Webhook Handler
 	http.HandleFunc("/telegram", handleTelegram)
 	fileServer := http.FileServer(http.Dir("src/main/resources/static"))
 	http.Handle("/", fileServer)
@@ -147,59 +149,17 @@ func main() {
 	}
 }
 
-// Chartink & TradingView Webhook Handler
-func handleWebhook(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Read full body first before anything else
-	bodyBytes, _ := io.ReadAll(r.Body)
-	bodyStr := string(bodyBytes)
-
-	// Restore body for form parsing
-	r.Body = io.NopCloser(strings.NewReader(bodyStr))
-	r.ParseForm()
-
-	contentType := r.Header.Get("Content-Type")
-
-	// Try query params first (TradingView style)
-	uid := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("uid")))
-	key := strings.TrimSpace(r.URL.Query().Get("key"))
-
-	// Fallback: form body fields (Chartink sends uid/key inside POST body)
-	if uid == "" {
-		uid = strings.TrimSpace(strings.ToLower(r.FormValue("uid")))
-	}
-	if key == "" {
-		key = strings.TrimSpace(r.FormValue("key"))
-	}
-
-	// Fallback: JSON body (some integrations send everything as JSON)
-	if uid == "" && strings.Contains(contentType, "application/json") {
-		uid = strings.TrimSpace(strings.ToLower(extractValue(bodyStr, "uid")))
-		key = strings.TrimSpace(extractValue(bodyStr, "key"))
-	}
-
-	// Fallback: raw text body manual extraction
-	if uid == "" {
-		uid = strings.TrimSpace(strings.ToLower(extractValue(bodyStr, "uid")))
-	}
-	if key == "" {
-		key = strings.TrimSpace(extractValue(bodyStr, "key"))
-	}
-
+// Helper: Authenticate & check daily quota across all webhook types
+func authenticateAndAuthorize(w http.ResponseWriter, uid, key string) (string, bool) {
 	if uid == "" {
 		fmt.Fprint(w, "NO_UID")
-		return
+		return "", false
 	}
 	if key == "" {
 		fmt.Fprint(w, "NO_KEY")
-		return
+		return "", false
 	}
 
-	// Check RAM cache first
 	var chatID string
 	var maxAlerts int
 	cacheValid := false
@@ -211,7 +171,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if found && time.Now().Before(entry.Expiration) {
 		if entry.UserKey != key {
 			fmt.Fprint(w, "FORBIDDEN")
-			return
+			return "", false
 		}
 		chatID = entry.ChatID
 		maxAlerts = entry.MaxAlerts
@@ -227,16 +187,16 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 		if err == sql.ErrNoRows {
 			fmt.Fprint(w, "UID_NOT_LINKED")
-			return
+			return "", false
 		} else if err != nil {
 			log.Printf("DB Error: %v", err)
 			fmt.Fprint(w, "OK")
-			return
+			return "", false
 		}
 
 		if userKey != key {
 			fmt.Fprint(w, "FORBIDDEN")
-			return
+			return "", false
 		}
 
 		userCacheMutex.Lock()
@@ -258,7 +218,7 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	if currentUsage >= maxAlerts {
 		fmt.Fprint(w, "LIMIT_EXCEEDED")
-		return
+		return "", false
 	}
 
 	// Atomic increment
@@ -268,13 +228,197 @@ func handleWebhook(w http.ResponseWriter, r *http.Request) {
 		todayStr, chatID,
 	)
 
+	return chatID, true
+}
+
+// 1. Chartink Webhook Handler (PRESERVED 100% UNTOUCHED LOGIC)
+func handleWebhook(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	bodyBytes, _ := io.ReadAll(r.Body)
+	bodyStr := string(bodyBytes)
+
+	r.Body = io.NopCloser(strings.NewReader(bodyStr))
+	r.ParseForm()
+
+	contentType := r.Header.Get("Content-Type")
+
+	uid := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("uid")))
+	key := strings.TrimSpace(r.URL.Query().Get("key"))
+
+	if uid == "" {
+		uid = strings.TrimSpace(strings.ToLower(r.FormValue("uid")))
+	}
+	if key == "" {
+		key = strings.TrimSpace(r.FormValue("key"))
+	}
+
+	if uid == "" && strings.Contains(contentType, "application/json") {
+		uid = strings.TrimSpace(strings.ToLower(extractValue(bodyStr, "uid")))
+		key = strings.TrimSpace(extractValue(bodyStr, "key"))
+	}
+
+	if uid == "" {
+		uid = strings.TrimSpace(strings.ToLower(extractValue(bodyStr, "uid")))
+	}
+	if key == "" {
+		key = strings.TrimSpace(extractValue(bodyStr, "key"))
+	}
+
+	chatID, ok := authenticateAndAuthorize(w, uid, key)
+	if !ok {
+		return
+	}
+
 	go sendTelegram(chatID, buildMessage(bodyStr))
 	fmt.Fprint(w, "OK")
 }
 
+// 2. Dedicated TradingView Handler
+func handleTradingView(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	bodyBytes, _ := io.ReadAll(r.Body)
+	bodyStr := strings.TrimSpace(string(bodyBytes))
+
+	uid := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("uid")))
+	key := strings.TrimSpace(r.URL.Query().Get("key"))
+
+	if uid == "" {
+		uid = strings.TrimSpace(strings.ToLower(extractValue(bodyStr, "uid")))
+	}
+	if key == "" {
+		key = strings.TrimSpace(extractValue(bodyStr, "key"))
+	}
+
+	chatID, ok := authenticateAndAuthorize(w, uid, key)
+	if !ok {
+		return
+	}
+
+	go sendTelegram(chatID, buildTradingViewMessage(bodyStr))
+	fmt.Fprint(w, "OK")
+}
+
+// 3. Universal Webhook Handler (GitHub, Stripe, Razorpay, Cron jobs, APIs)
+func handleUniversalWebhook(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	bodyBytes, _ := io.ReadAll(r.Body)
+	bodyStr := strings.TrimSpace(string(bodyBytes))
+
+	uid := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("uid")))
+	key := strings.TrimSpace(r.URL.Query().Get("key"))
+
+	if uid == "" {
+		uid = strings.TrimSpace(strings.ToLower(extractValue(bodyStr, "uid")))
+	}
+	if key == "" {
+		key = strings.TrimSpace(extractValue(bodyStr, "key"))
+	}
+
+	chatID, ok := authenticateAndAuthorize(w, uid, key)
+	if !ok {
+		return
+	}
+
+	go sendTelegram(chatID, buildUniversalMessage(bodyStr))
+	fmt.Fprint(w, "OK")
+}
+
+// TradingView Message Formatter
+func buildTradingViewMessage(body string) string {
+	if body == "" {
+		return "📈 *TradingView Alert*\n\n_(Empty message received)_"
+	}
+
+	if strings.HasPrefix(body, "{") {
+		var raw map[string]interface{}
+		if err := json.Unmarshal([]byte(body), &raw); err == nil && len(raw) > 0 {
+			var sb strings.Builder
+			sb.WriteString("📈 *TradingView Alert*\n\n")
+
+			if sym, ok := raw["ticker"]; ok {
+				sb.WriteString(fmt.Sprintf("📊 *Ticker:* %v\n", sym))
+			} else if sym, ok := raw["symbol"]; ok {
+				sb.WriteString(fmt.Sprintf("📊 *Ticker:* %v\n", sym))
+			}
+
+			if act, ok := raw["action"]; ok {
+				sb.WriteString(fmt.Sprintf("⚡ *Action:* %v\n", act))
+			}
+
+			if price, ok := raw["price"]; ok {
+				sb.WriteString(fmt.Sprintf("💰 *Price:* %v\n", price))
+			} else if price, ok := raw["close"]; ok {
+				sb.WriteString(fmt.Sprintf("💰 *Close:* %v\n", price))
+			}
+
+			if msg, ok := raw["message"]; ok {
+				sb.WriteString(fmt.Sprintf("\n💬 %s\n", escapeMarkdown(fmt.Sprintf("%v", msg))))
+			}
+
+			// Add other arbitrary keys
+			for k, v := range raw {
+				lower := strings.ToLower(k)
+				if lower == "ticker" || lower == "symbol" || lower == "action" || lower == "price" || lower == "close" || lower == "message" || lower == "uid" || lower == "key" {
+					continue
+				}
+				sb.WriteString(fmt.Sprintf("• *%s:* %v\n", escapeMarkdown(strings.Title(k)), v))
+			}
+			return strings.TrimSpace(sb.String())
+		}
+	}
+
+	return fmt.Sprintf("📈 *TradingView Alert*\n\n%s", escapeMarkdown(body))
+}
+
+// Universal Webhook Formatter (for Stripe, GitHub, JSON APIs, custom scripts)
+func buildUniversalMessage(body string) string {
+	if body == "" {
+		return "🔔 *Webhook Alert*\n\n_(Empty payload)_"
+	}
+
+	if strings.HasPrefix(body, "{") {
+		var raw map[string]interface{}
+		if err := json.Unmarshal([]byte(body), &raw); err == nil && len(raw) > 0 {
+			var sb strings.Builder
+			sb.WriteString("🔔 *Webhook Notification*\n")
+			sb.WriteString("━━━━━━━━━━━━━━━━━━\n")
+
+			count := 0
+			for k, v := range raw {
+				lower := strings.ToLower(k)
+				if lower == "uid" || lower == "key" {
+					continue
+				}
+				if count >= 8 {
+					sb.WriteString("• _...and more fields_\n")
+					break
+				}
+				formattedKey := strings.Title(strings.ReplaceAll(k, "_", " "))
+				sb.WriteString(fmt.Sprintf("• *%s:* %v\n", escapeMarkdown(formattedKey), v))
+				count++
+			}
+			sb.WriteString("━━━━━━━━━━━━━━━━━━")
+			return strings.TrimSpace(sb.String())
+		}
+	}
+
+	return fmt.Sprintf("🔔 *Webhook Alert*\n\n%s", escapeMarkdown(body))
+}
+
 // Telegram Bot Command Handler
 func handleTelegram(w http.ResponseWriter, r *http.Request) {
-	// Instantly acknowledge Telegram to prevent retries
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "OK")
 
@@ -292,7 +436,6 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// FIX 5: Atomic dedup using ON CONFLICT — same as Node.js version
 	var rowsAffected int64
 	result, err := db.Exec(
 		"INSERT INTO telegram_updates (update_id) VALUES ($1) ON CONFLICT (update_id) DO NOTHING",
@@ -302,7 +445,7 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 		rowsAffected, _ = result.RowsAffected()
 	}
 	if rowsAffected == 0 {
-		return // Duplicate update, ignore
+		return
 	}
 
 	chatIDStr := fmt.Sprintf("%d", update.Message.Chat.ID)
@@ -314,7 +457,7 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 		var uid, userKey string
 		err := db.QueryRow("SELECT uid, user_key FROM user_map WHERE chat_id = $1", chatIDStr).Scan(&uid, &userKey)
 		if err == nil {
-			go sendTelegram(chatIDStr, fmt.Sprintf("✅ Already linked: `%s`\nUse /myuid for your Webhook URL.", uid))
+			go sendTelegram(chatIDStr, fmt.Sprintf("✅ Already linked: `%s`\nUse /myuid for your Webhook URLs.", uid))
 		} else {
 			newUid := generateRandomString(uidAlphabet, 8)
 			newKey := generateRandomString(keyAlphabet, 24)
@@ -350,7 +493,6 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_, _ = db.Exec("DELETE FROM user_map WHERE chat_id = $1", chatIDStr)
-		// Also clear from cache
 		userCacheMutex.Lock()
 		for k, v := range userCache {
 			if v.ChatID == chatIDStr {
@@ -368,7 +510,6 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 			go sendTelegram(chatIDStr, "⚠️ Send `/newuid confirm` to rotate your URL.")
 			return
 		}
-		// Clear old entry from cache
 		var oldUid string
 		_ = db.QueryRow("SELECT uid FROM user_map WHERE chat_id = $1", chatIDStr).Scan(&oldUid)
 		if oldUid != "" {
@@ -404,7 +545,7 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// /support <message> (Available to all users)
+	// /support <message>
 	if strings.HasPrefix(text, "/support") {
 		query := strings.TrimSpace(strings.TrimPrefix(text, "/support"))
 		if query == "" {
@@ -428,7 +569,6 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			targetChat := strings.TrimSpace(parts[1])
-
 			idx := strings.Index(text, parts[1])
 			replyMsg := strings.TrimSpace(text[idx+len(parts[1]):])
 
@@ -506,7 +646,6 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 
 			rowsAffected, _ := result.RowsAffected()
 			if rowsAffected > 0 {
-				// Invalidate RAM cache so new limit takes effect immediately
 				userCacheMutex.Lock()
 				for k, v := range userCache {
 					if v.ChatID == target || strings.EqualFold(k, target) {
@@ -542,7 +681,6 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 
 			rowsAffected, _ := result.RowsAffected()
 
-			// Clear entire RAM cache so new limit applies immediately to everyone
 			userCacheMutex.Lock()
 			userCache = make(map[string]UserCacheEntry)
 			userCacheMutex.Unlock()
@@ -558,8 +696,6 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			targetChat := strings.TrimSpace(parts[1])
-
-			// Reconstruct the message text (everything after the chat_id)
 			idx := strings.Index(text, parts[1])
 			customMsg := strings.TrimSpace(text[idx+len(parts[1]):])
 
@@ -599,15 +735,24 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Updated /myuid message with dedicated URLs
 func buildLinkedMessage(uid, userKey string) string {
-	webhook := fmt.Sprintf("%s/chartink?uid=%s&key=%s", publicURL, uid, userKey)
+	chartinkURL := fmt.Sprintf("%s/chartink?uid=%s&key=%s", publicURL, uid, userKey)
+	tradingViewURL := fmt.Sprintf("%s/tradingview?uid=%s&key=%s", publicURL, uid, userKey)
+	webhookURL := fmt.Sprintf("%s/webhook?uid=%s&key=%s", publicURL, uid, userKey)
+
 	return fmt.Sprintf(
-		"✅ *Linked Successfully!*\n\n*Webhook URL:* `%s`\n\nPaste this URL in Chartink/TradingView in the webhook field while setting alert\n\n/stats - Usage\n/more - Actions",
-		webhook,
+		"✅ *Linked Successfully!*\n\n"+
+			"📊 *Chartink (Default):*\n`%s`\n\n"+
+			"📈 *TradingView:*\n`%s`\n\n"+
+			"🌐 *Universal Webhook (GitHub, Stripe, APIs):*\n`%s`\n\n"+
+			"_Paste the corresponding URL into your alert/webhook settings._\n\n"+
+			"/stats - Usage\n/more - Actions",
+		chartinkURL, tradingViewURL, webhookURL,
 	)
 }
 
-// FIX 2: Full message parser matching Node.js version
+// Existing Chartink message parser (UNTOUCHED)
 func buildMessage(body string) string {
 	body = strings.TrimSpace(body)
 	if body == "" {
@@ -620,7 +765,6 @@ func buildMessage(body string) string {
 	triggeredStocks := ""
 
 	if strings.HasPrefix(body, "{") {
-		// JSON payload (TradingView or Chartink JSON mode)
 		var raw map[string]interface{}
 		if err := json.Unmarshal([]byte(body), &raw); err == nil {
 			if v, ok := raw["stocks"]; ok {
@@ -635,7 +779,6 @@ func buildMessage(body string) string {
 					symbol = fmt.Sprintf("%v", v)
 				}
 			}
-			// NEW - handles both trigger_prices (Chartink) and trigger_price (TradingView)
 			price := ""
 			if v, ok := raw["trigger_prices"]; ok {
 				price = fmt.Sprintf("%v", v)
@@ -650,7 +793,6 @@ func buildMessage(body string) string {
 				}
 			}
 
-			// Also show stocks with prices side by side if both available
 			if triggeredStocks != "" && price != "" {
 				stocks := strings.Split(triggeredStocks, ",")
 				prices := strings.Split(price, ",")
@@ -675,7 +817,6 @@ func buildMessage(body string) string {
 				timePart = fmt.Sprintf("%v", v)
 			}
 		} else {
-			// Fallback manual extraction if JSON parse fails
 			triggeredStocks = extractValue(body, "stocks")
 			symbol := extractValue(body, "symbol")
 			if symbol == "" {
@@ -698,7 +839,6 @@ func buildMessage(body string) string {
 			timePart = extractValue(body, "triggered_at")
 		}
 	} else if strings.Contains(strings.ToLower(body), "extra data:") {
-		// Chartink plain text format
 		idx := strings.Index(strings.ToLower(body), "extra data:") + 11
 		extra := strings.TrimSpace(body[idx:])
 		parts := strings.Split(extra, ",")
@@ -731,7 +871,6 @@ func buildMessage(body string) string {
 	return strings.TrimSpace(sb)
 }
 
-// Manual JSON value extractor (fallback)
 func extractValue(jsonStr, key string) string {
 	pattern := `"` + key + `":`
 	start := strings.Index(jsonStr, pattern)
