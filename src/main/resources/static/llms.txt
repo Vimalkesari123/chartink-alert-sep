@@ -1,0 +1,34 @@
+# NotifyU Digital Services & Subscriptions
+
+> NotifyU provides verified premium software upgrades, developer tools, educational subscriptions, and digital productivity services at discounted rates for Indian users with instant UPI activation and Telegram delivery.
+
+## Core Alert Tools
+- [Chartink & TradingView Alerts to Telegram](https://notifyu.me/): Instant webhook alert forwarding service connecting Chartink scanners and TradingView alerts directly to private Telegram channels and groups.
+
+## Product Catalog & Services Hub
+- [All Services Directory](https://notifyu.me/services.html): Complete index of verified premium tools, developer credits, and subscription passes.
+
+## Trading & Productivity Tools
+- [FxReplay Pro](https://notifyu.me/fxreplay-pro.html): 5-day professional forex backtesting pass with TradingView charting and multi-timeframe bar replay.
+
+## Fitness & Lifestyle
+- [Cult.fit Elite Pass](https://notifyu.me/cultfit-elite.html): Discounted Cult.fit Elite gym access voucher for centers and group classes across India.
+
+## Developer & Startup Infrastructure
+- [Framer Pro](https://notifyu.me/framer-pro.html): 1-Year Framer Pro plan code for building and publishing high-performance custom websites.
+- [MongoDB Atlas Startup Credits](https://notifyu.me/mongodb-credits.html): Discounted MongoDB Atlas cloud database credits for scalable backend deployments.
+
+## Career & Professional Growth
+- [LinkedIn Premium](https://notifyu.me/linkedin-premium.html): 6-Month Career Plan upgrade via official activation voucher link on personal account.
+
+## Learning & Academic Tools
+- [Coursera Plus](https://notifyu.me/coursera-plus.html): 1-Year unlimited access pass to 7,000+ courses, Specializations, and Professional Certificates.
+- [DataCamp Premium](https://notifyu.me/datacamp-premium.html): 3-Month full access pass to 500+ interactive courses in Python, SQL, R, and Data Science Career Tracks.
+- [QuillBot Premium](https://notifyu.me/quillbot-premium.html): 1-Month unlimited paraphrasing pass unlocking all 9 writing modes, 25k-word summarizer, and plagiarism scanner via coupon code.
+
+## Entertainment & Shopping
+- [Amazon Prime](https://notifyu.me/amazon-prime.html): 12-Month full-benefit Prime membership (4K Prime Video, 1-day delivery, ad-free music) activating directly on personal mobile number.
+
+## Support, Verification & Ordering
+- Telegram Orders: https://t.me/Mrpremium10
+- Accepted Payment Methods: UPI (Google Pay, PhonePe, Paytm, BHIM, QR code) and Crypto (USDT)
