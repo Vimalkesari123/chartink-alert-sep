@@ -383,6 +383,43 @@ func buildUniversalMessage(body string) string {
 	if strings.HasPrefix(body, "{") {
 		var raw map[string]interface{}
 		if err := json.Unmarshal([]byte(body), &raw); err == nil && len(raw) > 0 {
+			// 1. SPECIFIC CHECK: GitHub Ping event
+			if zen, ok := raw["zen"]; ok {
+				return fmt.Sprintf("🐙 *GitHub Connected Successfully!*\n\n💬 _\"%s\"_\n✅ Webhook is active and verified.", escapeMarkdown(fmt.Sprintf("%v", zen)))
+			}
+
+			// 2. SPECIFIC CHECK: GitHub Push / Commit event
+			if repo, ok := raw["repository"].(map[string]interface{}); ok {
+				repoName := fmt.Sprintf("%v", repo["name"])
+				pusherName := "Someone"
+				if pusher, ok := raw["pusher"].(map[string]interface{}); ok {
+					pusherName = fmt.Sprintf("%v", pusher["name"])
+				}
+				ref := fmt.Sprintf("%v", raw["ref"])
+				branch := strings.TrimPrefix(ref, "refs/heads/")
+
+				commitMsg := "New commit"
+				if commits, ok := raw["commits"].([]interface{}); ok && len(commits) > 0 {
+					if firstCommit, ok := commits[0].(map[string]interface{}); ok {
+						commitMsg = fmt.Sprintf("%v", firstCommit["message"])
+					}
+				}
+
+				return fmt.Sprintf(
+					"🐙 *GitHub Push Alert*\n━━━━━━━━━━━━━━━━━━\n"+
+						"• *Repo:* %s\n"+
+						"• *Branch:* %s\n"+
+						"• *Pushed By:* %s\n"+
+						"• *Commit:* %s\n"+
+						"━━━━━━━━━━━━━━━━━━",
+					escapeMarkdown(repoName),
+					escapeMarkdown(branch),
+					escapeMarkdown(pusherName),
+					escapeMarkdown(commitMsg),
+				)
+			}
+
+			// 3. GENERIC JSON HANDLER (Stripe, Razorpay, Zapier, Python scripts)
 			var sb strings.Builder
 			sb.WriteString("🔔 *Webhook Notification*\n")
 			sb.WriteString("━━━━━━━━━━━━━━━━━━\n")
@@ -397,9 +434,18 @@ func buildUniversalMessage(body string) string {
 					sb.WriteString("• _...and more fields_\n")
 					break
 				}
-				formattedKey := strings.Title(strings.ReplaceAll(k, "_", " "))
-				sb.WriteString(fmt.Sprintf("• *%s:* %v\n", escapeMarkdown(formattedKey), v))
-				count++
+
+				// Only print primitive values (skip deeply nested objects so Telegram markdown doesn't break)
+				switch val := v.(type) {
+				case string:
+					formattedKey := strings.Title(strings.ReplaceAll(k, "_", " "))
+					sb.WriteString(fmt.Sprintf("• *%s:* %s\n", escapeMarkdown(formattedKey), escapeMarkdown(val)))
+					count++
+				case float64, int, bool:
+					formattedKey := strings.Title(strings.ReplaceAll(k, "_", " "))
+					sb.WriteString(fmt.Sprintf("• *%s:* %v\n", escapeMarkdown(formattedKey), val))
+					count++
+				}
 			}
 			sb.WriteString("━━━━━━━━━━━━━━━━━━")
 			return strings.TrimSpace(sb.String())
