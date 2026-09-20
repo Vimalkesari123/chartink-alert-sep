@@ -1,133 +1,274 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>How to Send TradingView Alerts to Telegram Free via Webhook | NotifyU</title>
-    <meta name="description" content="Step-by-step tutorial on sending instant TradingView alerts, Pine Script indicators, and strategy signals directly to a Telegram channel or private chat using NotifyU webhooks.">
-    <meta name="keywords" content="tradingview to telegram, tradingview webhook telegram bot, send tradingview alerts to telegram free, pine script alerts telegram">
+    <title>TradingView Alerts to Telegram Bot | Free Webhook Router | NotifyU</title>
+    <meta name="description" content="Send TradingView webhook alerts, Pine Script indicators, and crypto/stock trading signals directly to your Telegram automatically. Ultra-fast real-time alert router.">
+    <meta name="keywords" content="tradingview to telegram, tradingview alerts to telegram bot, tradingview webhook router, auto trading alerts telegram, pine script alert to telegram">
+    <link rel="manifest" href="/manifest.json">
     <link rel="canonical" href="https://notifyu.me/tradingview-to-telegram.html">
-    <meta property="og:title" content="How to Send TradingView Alerts to Telegram Free via Webhook">
-    <meta property="og:description" content="Send Pine Script indicators and strategy buy/sell alerts from TradingView directly into Telegram without running servers.">
-    <meta property="og:url" content="https://notifyu.me/tradingview-to-telegram.html">
-    <meta property="og:type" content="article">
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "HowTo",
-      "name": "How to Send TradingView Alerts to Telegram via Webhook",
-      "description": "Connect TradingView alerts directly to your Telegram chat using NotifyU.",
-      "step": [
-        {
-          "@type": "HowToStep",
-          "name": "Generate your Webhook URL",
-          "text": "Start @notifyubot on Telegram and type /tradingview to receive your personalized webhook URL."
-        },
-        {
-          "@type": "HowToStep",
-          "name": "Configure Alert in TradingView",
-          "text": "Create an alert on any chart, enable Webhook URL under Notifications, and paste your NotifyU webhook."
-        },
-        {
-          "@type": "HowToStep",
-          "name": "Customize Payload & Receive Signals",
-          "text": "Add your indicator message or JSON variables into the alert body to receive formatted buy/sell signals."
-        }
-      ]
-    }
-    </script>
 
     <style>
         :root {
-            --primary: #0284c7;
-            --primary-hover: #0369a1;
-            --text-dark: #0f172a;
-            --text-muted: #475569;
-            --bg-light: #f8fafc;
-            --border: #e2e8f0;
+            --bg-main: #ffffff;
+            --bg-offset: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-dim: #475569;
+            --accent-pink: #ff69b4;
+            --accent-blue: #38bdf8;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: var(--bg-light); color: var(--text-muted); line-height: 1.6; }
-        header { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 24px; position: sticky; top: 0; z-index: 10; }
-        .nav-container { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); text-decoration: none; }
-        .nav-links a { color: var(--text-muted); text-decoration: none; margin-left: 18px; font-size: 0.95rem; font-weight: 500; }
-        .nav-links a:hover { color: var(--primary); }
-        .container { max-width: 860px; margin: 32px auto; padding: 0 20px; }
-        .card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 32px; margin-bottom: 24px; }
-        h1 { color: var(--text-dark); font-size: 2rem; margin-bottom: 12px; line-height: 1.3; }
-        h2 { color: var(--text-dark); font-size: 1.35rem; margin: 28px 0 12px; }
-        p { margin-bottom: 14px; font-size: 1rem; }
-        .step-num { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; background: #e0f2fe; color: var(--primary); font-weight: 700; align-items: center; justify-content: center; margin-right: 8px; }
-        pre { background: #0f172a; color: #f8fafc; padding: 14px 18px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; margin: 12px 0 16px; }
-        code { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 0.88rem; }
-        pre code { background: none; color: inherit; padding: 0; }
-        .cta-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #2563eb; color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 1rem; transition: background 0.2s; margin-top: 10px; }
-        .cta-btn:hover { background: #1d4ed8; }
-        .badge { display: inline-block; background: #ecfdf5; color: #047857; padding: 4px 10px; border-radius: 99px; font-size: 0.8rem; font-weight: 600; margin-bottom: 12px; }
-        footer { text-align: center; padding: 30px; font-size: 0.9rem; color: #94a3b8; }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+        nav {
+            padding: 1.5rem 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo img { height: 42px; width: auto; vertical-align: middle; }
+
+        .nav-link {
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.6rem 1.2rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 99px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-pink);
+            border-color: var(--accent-pink);
+            background-color: #fff5f9;
+            transform: translateY(-1px);
+        }
+
+        header {
+            padding: 6rem 0 4rem;
+            text-align: center;
+            background-color: var(--bg-main);
+        }
+
+        h1 {
+            font-size: 3.8rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            color: #0f172a;
+        }
+
+        .highlight {
+            color: var(--accent-blue);
+        }
+
+        .hero-p {
+            font-size: 1.25rem;
+            color: var(--text-dim);
+            max-width: 650px;
+            margin: 0 auto 3rem;
+        }
+
+        .cta-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        .cta-button {
+            background-color: var(--accent-pink);
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 14px 0 rgba(255, 105, 180, 0.39);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            background-color: #f652a6;
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.23);
+        }
+
+        .secondary-button {
+            background: #ffffff;
+            color: var(--text-main);
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .secondary-button:hover { border-color: var(--accent-blue); background: var(--bg-offset); }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 2rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-blue);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h3 { font-size: 1.4rem; margin-bottom: 1rem; color: var(--accent-blue); }
+
+        .how-it-works { padding: 6rem 0; background-color: var(--bg-offset); }
+        .how-it-works h2 { text-align: center; font-size: 2.5rem; margin-bottom: 4rem; color: #0f172a; }
+
+        .step { display: flex; gap: 2rem; margin-bottom: 3rem; align-items: flex-start; }
+        .step-num {
+            background-color: var(--accent-blue);
+            color: white;
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; flex-shrink: 0;
+        }
+        .step-content h4 { font-size: 1.25rem; color: var(--text-main); margin-bottom: 0.35rem; }
+        .step-content p { color: var(--text-dim); }
+        .step-content a { color: var(--accent-pink); text-decoration: none; font-weight: 600; }
+
+        code { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 0.95rem; }
+
+        footer {
+            text-align: center;
+            padding: 4rem 0;
+            color: var(--text-dim);
+            background: #ffffff;
+            border-top: 1px solid #f1f5f9;
+        }
+        footer a { color: var(--accent-pink); text-decoration: none; font-weight: 600; }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.8rem; }
+            .cta-group { flex-direction: column; }
+        }
     </style>
 </head>
 <body>
 
+<div class="container">
+    <nav>
+        <a href="/" class="logo">
+            <img src="/logo192.png" alt="NotifyU Logo">
+        </a>
+        <a href="/services.html" class="nav-link">Premium Services</a>
+    </nav>
+</div>
+
 <header>
-    <div class="nav-container">
-        <a href="/" class="logo">NotifyU</a>
-        <div class="nav-links">
-            <a href="/">Home</a>
-            <a href="/services.html">Subscriptions</a>
-            <a href="https://t.me/notifyubot" target="_blank">Telegram Bot</a>
+    <div class="container">
+        <h1>Connect <span class="highlight">TradingView Alerts</span><br>to Telegram Instantly.</h1>
+        <p class="hero-p">The fastest free webhook router to deliver TradingView buy/sell signals, indicator crossovers, and custom Pine Script alerts straight to Telegram.</p>
+
+        <div class="cta-group">
+            <a href="https://t.me/Notifyu1_bot" class="cta-button">Connect to Bot</a>
+            <a href="/services.html" class="secondary-button">View Services</a>
         </div>
     </div>
 </header>
 
-<main class="container">
-    <article class="card">
-        <span class="badge">Trading Automation Guide</span>
-        <h1>How to Send TradingView Alerts Directly to Telegram via Webhooks</h1>
-        <p>Real-time execution speed matters when trading intraday breakouts, RSI divergences, or algorithmic Pine Script strategies. While TradingView offers SMS and email notifications, Telegram alerts provide zero-latency mobile notifications with custom trade signal cards.</p>
+<div class="container">
+    <section class="features">
+        <div class="card">
+            <h3>⚡ Sub-Second Delivery</h3>
+            <p>Execution speed matters. Alerts hit your Telegram in real time so you never miss a market breakout.</p>
+        </div>
+        <div class="card">
+            <h3>📈 Dynamic Trade Cards</h3>
+            <p>We automatically parse ticker symbols, trigger prices, actions, and custom notes into clean alert cards.</p>
+        </div>
+        <div class="card">
+            <h3>🔒 Encrypted Routing</h3>
+            <p>Your unique UID and private key ensure your proprietary trading signals remain private and secure.</p>
+        </div>
+    </section>
+</div>
+
+<section class="how-it-works">
+    <div class="container" style="max-width: 800px;">
+        <h2>3-Step Setup</h2>
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+                <h4>Generate Your Webhook URL</h4>
+                <p>Open <a href="https://t.me/Notifyu1_bot">@Notifyu1_bot</a> on Telegram and type <code>/tradingview</code> to receive your URL.</p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+                <h4>Enable Webhook on TradingView</h4>
+                <p>Create an alert on any chart, open the <strong>Notifications</strong> tab, check <strong>Webhook URL</strong>, and paste your NotifyU URL.</p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+                <h4>Receive Real-Time Signals</h4>
+                <p>Send standard message text or dynamic JSON variables (<code>{{ticker}}</code>, <code>{{close}}</code>) straight to your Telegram.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section style="padding: 4rem 0; background-color: var(--bg-main);">
+    <div class="container" style="max-width: 800px;">
+        <h2 style="text-align: center; font-size: 2rem; margin-bottom: 2rem; color: #0f172a;">Frequently Asked Questions</h2>
         
-        <p>With <strong>NotifyU</strong>, you can relay alerts from TradingView straight to your personal Telegram or private trading channel for free—without spinning up Heroku apps or AWS Lambda relays.</p>
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.2rem; color: var(--accent-blue);">Can I send TradingView alerts to a Telegram channel or group?</h3>
+            <p style="color: var(--text-dim);">Yes. Add @Notifyu1_bot to your private or public channel as an admin, type <code>/start</code> in the channel, and use the generated webhook URL in your TradingView alert.</p>
+        </div>
 
-        <a href="https://t.me/notifyubot" target="_blank" class="cta-btn">🚀 Connect TradingView to Telegram Bot</a>
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.2rem; color: var(--accent-blue);">Can I format the TradingView message with custom text?</h3>
+            <p style="color: var(--text-dim);">Yes! NotifyU supports both plain-text alerts (e.g., <em>NIFTY crossed 25,400!</em>) and structured JSON payloads with custom indicator values.</p>
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1.2rem; color: var(--accent-blue);">Is this webhook bot free to use?</h3>
+            <p style="color: var(--text-dim);">Yes, NotifyU includes a generous free daily quota of webhook triggers, making it ideal for retail intraday and swing traders.</p>
+        </div>
+    </div>
+</section>
 
-        <h2>3-Step Setup Guide</h2>
-
-        <p><span class="step-num">1</span> <strong>Get your dedicated TradingView Webhook URL</strong></p>
-        <p>Open <a href="https://t.me/notifyubot" target="_blank" style="color:var(--primary); font-weight:600;">@notifyubot</a> on Telegram and send the command <code>/tradingview</code>. The bot will return your unique URL:</p>
-        <pre><code>https://notifyu.me/tradingview?uid=YOUR_UID&key=YOUR_KEY</code></pre>
-
-        <p><span class="step-num">2</span> <strong>Configure Webhook in TradingView</strong></p>
-        <p>1. Open your chart on TradingView (NIFTY, BankNifty, Crypto, or Forex).<br>
-        2. Click the <strong>Alert (Clock)</strong> icon to add an alert.<br>
-        3. Under the <strong>Notifications</strong> tab, check the <strong>Webhook URL</strong> box.<br>
-        4. Paste your NotifyU TradingView URL into the input field.</p>
-
-        <p><span class="step-num">3</span> <strong>Choose Plain Text or Structured JSON Signals</strong></p>
-        <p>You can send simple text alerts or formatted JSON parameters:</p>
-
-        <p><strong>Example A: Plain Text Alert</strong></p>
-        <pre><code>NIFTY 15m RSI Overbought! Price crossed 25,400. Prepare to short.</code></pre>
-
-        <p><strong>Example B: Dynamic JSON Trading Card (Recommended)</strong></p>
-        <pre><code>{
-  "ticker": "{{ticker}}",
-  "action": "BUY",
-  "price": "{{close}}",
-  "message": "Supertrend Bullish Flip 5m"
-}</code></pre>
-
-        <p>NotifyU automatically parses these parameters and formats them into a high-visibility trading signal card in Telegram.</p>
-
-        <h2>Upgrade Your Trading Workflow</h2>
-        <p>Need historical bar replay tools to test your strategies before going live? Check out our verified, discounted access to <a href="/fxreplay-pro.html" style="color:var(--primary); font-weight:600;">FxReplay Pro Passes</a> on our <a href="/services.html" style="color:var(--primary); font-weight:600;">Services catalog</a>.</p>
-    </article>
-</main>
-
-<footer>
-    <p>&copy; 2026 NotifyU. Lightweight Webhook-to-Telegram Relay. All rights reserved.</p>
-</footer>
+<div class="container">
+    <footer>
+        <p>© 2026 NotifyU. Built for the trading community.</p>
+        <p style="margin-top: 1rem;"><a href="mailto:support@notifyu.me">support@notifyu.me</a></p>
+    </footer>
+</div>
 
 </body>
 </html>
