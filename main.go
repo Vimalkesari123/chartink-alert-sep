@@ -383,26 +383,47 @@ func buildUniversalMessage(body string) string {
 	if strings.HasPrefix(body, "{") {
 		var raw map[string]interface{}
 		if err := json.Unmarshal([]byte(body), &raw); err == nil && len(raw) > 0 {
-			// 1. SPECIFIC CHECK: GitHub Ping event
+			// 1. GitHub Ping event
 			if zen, ok := raw["zen"]; ok {
 				return fmt.Sprintf("🐙 *GitHub Connected Successfully!*\n\n💬 _\"%s\"_\n✅ Webhook is active and verified.", escapeMarkdown(fmt.Sprintf("%v", zen)))
 			}
 
-			// 2. SPECIFIC CHECK: GitHub Push / Commit event
+			// 2. GitHub Push / Commit event
 			if repo, ok := raw["repository"].(map[string]interface{}); ok {
 				repoName := fmt.Sprintf("%v", repo["name"])
-				pusherName := "Someone"
-				if pusher, ok := raw["pusher"].(map[string]interface{}); ok {
-					pusherName = fmt.Sprintf("%v", pusher["name"])
-				}
-				ref := fmt.Sprintf("%v", raw["ref"])
-				branch := strings.TrimPrefix(ref, "refs/heads/")
 
-				commitMsg := "New commit"
-				if commits, ok := raw["commits"].([]interface{}); ok && len(commits) > 0 {
-					if firstCommit, ok := commits[0].(map[string]interface{}); ok {
-						commitMsg = fmt.Sprintf("%v", firstCommit["message"])
+				// Extract Branch safely
+				branch := "main"
+				if ref, ok := raw["ref"].(string); ok && ref != "" {
+					branch = strings.TrimPrefix(ref, "refs/heads/")
+				}
+
+				// Extract Pusher / Author
+				pusherName := "Unknown"
+				if pusher, ok := raw["pusher"].(map[string]interface{}); ok {
+					if name, ok := pusher["name"].(string); ok {
+						pusherName = name
 					}
+				}
+
+				// Extract Commit Message (supports both head_commit and commits array)
+				commitMsg := ""
+				if headCommit, ok := raw["head_commit"].(map[string]interface{}); ok {
+					if msg, ok := headCommit["message"].(string); ok {
+						commitMsg = msg
+					}
+				}
+				if commitMsg == "" {
+					if commits, ok := raw["commits"].([]interface{}); ok && len(commits) > 0 {
+						if first, ok := commits[0].(map[string]interface{}); ok {
+							if msg, ok := first["message"].(string); ok {
+								commitMsg = msg
+							}
+						}
+					}
+				}
+				if commitMsg == "" {
+					commitMsg = "Code update"
 				}
 
 				return fmt.Sprintf(
@@ -419,7 +440,7 @@ func buildUniversalMessage(body string) string {
 				)
 			}
 
-			// 3. GENERIC JSON HANDLER (Stripe, Razorpay, Zapier, Python scripts)
+			// 3. Generic JSON handler (Stripe, Razorpay, Zapier, Python, APIs)
 			var sb strings.Builder
 			sb.WriteString("🔔 *Webhook Notification*\n")
 			sb.WriteString("━━━━━━━━━━━━━━━━━━\n")
@@ -435,7 +456,6 @@ func buildUniversalMessage(body string) string {
 					break
 				}
 
-				// Only print primitive values (skip deeply nested objects so Telegram markdown doesn't break)
 				switch val := v.(type) {
 				case string:
 					formattedKey := strings.Title(strings.ReplaceAll(k, "_", " "))
