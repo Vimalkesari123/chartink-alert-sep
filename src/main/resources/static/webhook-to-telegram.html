@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Webhook to Telegram Bot API (Stripe, Zapier, Python, APIs) | NotifyU</title>
+    <meta name="description" content="Send HTTP POST requests, Stripe payments, Zapier workflows, and server cron alerts straight to your Telegram chat. Free universal webhook relay API.">
+    <meta name="keywords" content="webhook to telegram, send http post to telegram, stripe webhook to telegram, zapier telegram alert, python script telegram alert">
+    <link rel="canonical" href="https://notifyu.me/webhook-to-telegram.html">
+    <meta property="og:title" content="Universal Webhook to Telegram Bot API">
+    <meta property="og:description" content="Connect Stripe, Razorpay, Python scripts, and Zapier to Telegram with zero backend configuration.">
+    <meta property="og:url" content="https://notifyu.me/webhook-to-telegram.html">
+    <meta property="og:type" content="article">
+
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-hover: #047857;
+            --text-dark: #0f172a;
+            --text-muted: #475569;
+            --bg-light: #f8fafc;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg-light); color: var(--text-muted); line-height: 1.6; }
+        header { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 24px; position: sticky; top: 0; z-index: 10; }
+        .nav-container { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); text-decoration: none; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; margin-left: 18px; font-size: 0.95rem; font-weight: 500; }
+        .nav-links a:hover { color: var(--primary); }
+        .container { max-width: 860px; margin: 32px auto; padding: 0 20px; }
+        .card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 32px; margin-bottom: 24px; }
+        h1 { color: var(--text-dark); font-size: 2rem; margin-bottom: 12px; line-height: 1.3; }
+        h2 { color: var(--text-dark); font-size: 1.35rem; margin: 28px 0 12px; }
+        p { margin-bottom: 14px; font-size: 1rem; }
+        pre { background: #0f172a; color: #f8fafc; padding: 14px 18px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; margin: 12px 0 16px; }
+        code { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 0.88rem; }
+        pre code { background: none; color: inherit; padding: 0; }
+        .cta-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 1rem; transition: background 0.2s; margin-top: 10px; }
+        .cta-btn:hover { background: var(--primary-hover); }
+        .badge { display: inline-block; background: #ecfdf5; color: #047857; padding: 4px 10px; border-radius: 99px; font-size: 0.8rem; font-weight: 600; margin-bottom: 12px; }
+        footer { text-align: center; padding: 30px; font-size: 0.9rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="nav-container">
+        <a href="/" class="logo">NotifyU</a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/services.html">Subscriptions</a>
+            <a href="https://t.me/notifyubot" target="_blank">Telegram Bot</a>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <article class="card">
+        <span class="badge">Universal Webhook API</span>
+        <h1>Connect Any Webhook to Telegram in Real Time</h1>
+        <p>Do you need payment receipts from <strong>Stripe or Razorpay</strong>, automation pings from <strong>Zapier or Make.com</strong>, or database health alerts from a custom <strong>Python script or server cron job</strong>? NotifyU provides a universal HTTP POST endpoint that instantly transforms JSON payloads into organized Telegram alert cards.</p>
+
+        <a href="https://t.me/notifyubot" target="_blank" class="cta-btn">⚡ Get Your Webhook URL on Telegram</a>
+
+        <h2>How It Works</h2>
+        <p>1. Open <a href="https://t.me/notifyubot" target="_blank" style="color:var(--primary); font-weight:600;">@notifyubot</a> and type <code>/api</code> or <code>/payments</code>.<br>
+        2. Copy your dedicated webhook URL.<br>
+        3. Send any standard HTTP POST request with JSON or plain text.</p>
+
+        <h2>Common Integration Examples</h2>
+
+        <p><strong>1. Python Script (Machine Learning / Cron Job / Web Scraping)</strong></p>
+        <pre><code>import requests
+
+url = "https://notifyu.me/webhook?uid=YOUR_UID&key=YOUR_KEY"
+data = {
+    "job": "Nightly Database Backup",
+    "status": "Completed",
+    "duration": "18s",
+    "size": "54MB"
+}
+requests.post(url, json=data)</code></pre>
+
+        <p><strong>2. Payment Gateways (Stripe / Razorpay / Shopify)</strong></p>
+        <p>In your payment dashboard developer portal, paste your NotifyU webhook as the target URL. When a customer completes checkout, NotifyU delivers:</p>
+        <pre><code>🔔 Webhook Notification
+━━━━━━━━━━━━━━━━━━
+• Gateway: Razorpay
+• Amount: INR 1499
+• Item: LinkedIn Premium 6M
+• Status: Success
+• Event: payment.captured
+━━━━━━━━━━━━━━━━━━</code></pre>
+
+        <p><strong>3. Zapier & Make.com (No-Code Lead Capture)</strong></p>
+        <p>Create a Zap trigger (e.g. Typeform submission, Google Sheet row addition), add a <em>Webhooks by Zapier (POST)</em> action, and paste your NotifyU endpoint. Form submissions arrive in your Telegram chat within milliseconds.</p>
+
+        <h2>Scale Your Projects for Less</h2>
+        <p>Scaling a new application? Access certified developer and productivity packages including <a href="/linkedin-premium.html" style="color:var(--primary); font-weight:600;">LinkedIn Premium</a>, <a href="/coursera-plus.html" style="color:var(--primary); font-weight:600;">Coursera Plus</a>, and <a href="/quillbot-premium.html" style="color:var(--primary); font-weight:600;">QuillBot Premium</a> via our <a href="/services.html" style="color:var(--primary); font-weight:600;">Services catalog</a>.</p>
+    </article>
+</main>
+
+<footer>
+    <p>&copy; 2026 NotifyU. Lightweight Webhook-to-Telegram Relay. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
