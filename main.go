@@ -68,7 +68,6 @@ func main() {
 		log.Fatal("CRITICAL: SPRING_DATASOURCE_URL is missing")
 	}
 
-	// Optimized HTTP Client with Keep-Alive
 	httpClient = &http.Client{
 		Transport: &http.Transport{
 			MaxIdleConns:        100,
@@ -78,7 +77,6 @@ func main() {
 		Timeout: 10 * time.Second,
 	}
 
-	// Connect to Supabase Postgres
 	var err error
 	db, err = sql.Open("postgres", dbURL)
 	if err != nil {
@@ -95,7 +93,7 @@ func main() {
 	}
 	log.Println("✅ Supabase database connected successfully!")
 
-	// Keepalive ping every 4 minutes to prevent idle connection drops
+	// Keepalive ping every 4 minutes
 	go func() {
 		ticker := time.NewTicker(4 * time.Minute)
 		for range ticker.C {
@@ -132,9 +130,9 @@ func main() {
 	}()
 
 	// Endpoints
-	http.HandleFunc("/chartink", handleWebhook)          // Untouched Chartink Handler
-	http.HandleFunc("/tradingview", handleTradingView)  // Dedicated TradingView Handler
-	http.HandleFunc("/webhook", handleUniversalWebhook) // Universal Webhook Handler
+	http.HandleFunc("/chartink", handleWebhook)
+	http.HandleFunc("/tradingview", handleTradingView)
+	http.HandleFunc("/webhook", handleUniversalWebhook)
 	http.HandleFunc("/telegram", handleTelegram)
 	fileServer := http.FileServer(http.Dir("src/main/resources/static"))
 	http.Handle("/", fileServer)
@@ -149,7 +147,7 @@ func main() {
 	}
 }
 
-// Helper: Authenticate & check daily quota across all webhook types
+// Authenticate & check daily quota
 func authenticateAndAuthorize(w http.ResponseWriter, uid, key string) (string, bool) {
 	if uid == "" {
 		fmt.Fprint(w, "NO_UID")
@@ -178,7 +176,6 @@ func authenticateAndAuthorize(w http.ResponseWriter, uid, key string) (string, b
 		cacheValid = true
 	}
 
-	// Cache miss -> Query DB
 	if !cacheValid {
 		var userKey string
 		err := db.QueryRow(
@@ -209,7 +206,6 @@ func authenticateAndAuthorize(w http.ResponseWriter, uid, key string) (string, b
 		userCacheMutex.Unlock()
 	}
 
-	// Daily usage check
 	todayStr := time.Now().Format("2006-01-02")
 	var currentUsage int
 	_ = db.QueryRow(
@@ -221,7 +217,6 @@ func authenticateAndAuthorize(w http.ResponseWriter, uid, key string) (string, b
 		return "", false
 	}
 
-	// Atomic increment
 	_, _ = db.Exec(
 		`INSERT INTO daily_usage(day, chat_id, alerts_count) VALUES($1, $2, 1)
 		 ON CONFLICT (day, chat_id) DO UPDATE SET alerts_count = daily_usage.alerts_count + 1`,
@@ -231,7 +226,7 @@ func authenticateAndAuthorize(w http.ResponseWriter, uid, key string) (string, b
 	return chatID, true
 }
 
-// 1. Chartink Webhook Handler (PRESERVED 100% UNTOUCHED LOGIC)
+// 1. Chartink Webhook Handler (UNTOUCHED LOGIC)
 func handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -306,7 +301,7 @@ func handleTradingView(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "OK")
 }
 
-// 3. Universal Webhook Handler (GitHub, Stripe, Razorpay, Cron jobs, APIs)
+// 3. Universal Webhook Handler (GitHub, Stripe, Razorpay, Zapier, APIs)
 func handleUniversalWebhook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -335,10 +330,9 @@ func handleUniversalWebhook(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "OK")
 }
 
-// TradingView Message Formatter
 func buildTradingViewMessage(body string) string {
 	if body == "" {
-		return "📈 *TradingView Alert*\n\n_(Empty message received)_"
+		return "📈 *TradingView Alert*\n\n_(Empty alert received)_"
 	}
 
 	if strings.HasPrefix(body, "{") {
@@ -367,7 +361,6 @@ func buildTradingViewMessage(body string) string {
 				sb.WriteString(fmt.Sprintf("\n💬 %s\n", escapeMarkdown(fmt.Sprintf("%v", msg))))
 			}
 
-			// Add other arbitrary keys
 			for k, v := range raw {
 				lower := strings.ToLower(k)
 				if lower == "ticker" || lower == "symbol" || lower == "action" || lower == "price" || lower == "close" || lower == "message" || lower == "uid" || lower == "key" {
@@ -382,7 +375,6 @@ func buildTradingViewMessage(body string) string {
 	return fmt.Sprintf("📈 *TradingView Alert*\n\n%s", escapeMarkdown(body))
 }
 
-// Universal Webhook Formatter (for Stripe, GitHub, JSON APIs, custom scripts)
 func buildUniversalMessage(body string) string {
 	if body == "" {
 		return "🔔 *Webhook Alert*\n\n_(Empty payload)_"
@@ -452,12 +444,37 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 	text := strings.TrimSpace(update.Message.Text)
 	isAdmin := (chatIDStr == adminChatID)
 
+	// Helper function to fetch user's uid & key
+	getUserKeys := func() (string, string, bool) {
+		var uid, userKey string
+		err := db.QueryRow("SELECT uid, user_key FROM user_map WHERE chat_id = $1", chatIDStr).Scan(&uid, &userKey)
+		if err != nil {
+			go sendTelegram(chatIDStr, "⚠️ Account not linked. Send /start to connect.")
+			return "", "", false
+		}
+		return uid, userKey, true
+	}
+
+	// Compact menu showing all supported platforms as clickable command links
+	sendAppMenu := func(targetChat string) {
+		msg := "✅ *Linked Successfully!*\n\n" +
+			"Tap any platform below to get its dedicated Webhook URL:\n\n" +
+			"📊 /chartink — Stock scanner alerts\n" +
+			"📈 /tradingview — Indicator & strategy signals\n" +
+			"🐙 /github — Commits, PRs & repo events\n" +
+			"💳 /payments — Stripe, Razorpay & Shopify\n" +
+			"⚡ /zapier — Zapier & Make.com workflows\n" +
+			"🌐 /api — Python scripts, cURL & servers\n\n" +
+			"/stats - Usage  •  /more - Actions"
+		go sendTelegram(targetChat, msg)
+	}
+
 	// /start
 	if strings.HasPrefix(text, "/start") {
 		var uid, userKey string
 		err := db.QueryRow("SELECT uid, user_key FROM user_map WHERE chat_id = $1", chatIDStr).Scan(&uid, &userKey)
 		if err == nil {
-			go sendTelegram(chatIDStr, fmt.Sprintf("✅ Already linked: `%s`\nUse /myuid for your Webhook URLs.", uid))
+			sendAppMenu(chatIDStr)
 		} else {
 			newUid := generateRandomString(uidAlphabet, 8)
 			newKey := generateRandomString(keyAlphabet, 24)
@@ -469,20 +486,71 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 				log.Printf("Insert error: %v", dbErr)
 				return
 			}
-			go sendTelegram(chatIDStr, buildLinkedMessage(newUid, newKey))
+			sendAppMenu(chatIDStr)
 		}
 		return
 	}
 
 	// /myuid
 	if strings.HasPrefix(text, "/myuid") {
-		var uid, userKey string
-		err := db.QueryRow("SELECT uid, user_key FROM user_map WHERE chat_id = $1", chatIDStr).Scan(&uid, &userKey)
-		if err != nil {
-			go sendTelegram(chatIDStr, "⚠️ Not linked. Send /start to generate your URL.")
-			return
+		if _, _, ok := getUserKeys(); ok {
+			sendAppMenu(chatIDStr)
 		}
-		go sendTelegram(chatIDStr, buildLinkedMessage(uid, userKey))
+		return
+	}
+
+	// Sub-commands for each platform
+	if strings.HasPrefix(text, "/chartink") {
+		if uid, userKey, ok := getUserKeys(); ok {
+			url := fmt.Sprintf("%s/chartink?uid=%s&key=%s", publicURL, uid, userKey)
+			msg := fmt.Sprintf("📊 *Chartink Webhook URL*\n\n`%s`\n\n📌 *How to use:*\n1. Open your Chartink scan alert settings.\n2. Paste this URL into the *Webhook URL* input box.\n3. Trigger prices and stock alerts will arrive here instantly.", url)
+			go sendTelegram(chatIDStr, msg)
+		}
+		return
+	}
+
+	if strings.HasPrefix(text, "/tradingview") {
+		if uid, userKey, ok := getUserKeys(); ok {
+			url := fmt.Sprintf("%s/tradingview?uid=%s&key=%s", publicURL, uid, userKey)
+			msg := fmt.Sprintf("📈 *TradingView Webhook URL*\n\n`%s`\n\n📌 *How to use:*\n1. In TradingView, create a new Alert.\n2. Check the *Webhook URL* box and paste this URL.\n3. Add your text or JSON into the Alert Message box.", url)
+			go sendTelegram(chatIDStr, msg)
+		}
+		return
+	}
+
+	if strings.HasPrefix(text, "/github") {
+		if uid, userKey, ok := getUserKeys(); ok {
+			url := fmt.Sprintf("%s/webhook?uid=%s&key=%s", publicURL, uid, userKey)
+			msg := fmt.Sprintf("🐙 *GitHub Webhook URL*\n\n`%s`\n\n📌 *How to use:*\n1. Go to your Repository → *Settings* → *Webhooks*.\n2. Click *Add webhook* and paste this URL as Payload URL.\n3. Select `application/json` as the content type.", url)
+			go sendTelegram(chatIDStr, msg)
+		}
+		return
+	}
+
+	if strings.HasPrefix(text, "/payments") || strings.HasPrefix(text, "/stripe") || strings.HasPrefix(text, "/razorpay") {
+		if uid, userKey, ok := getUserKeys(); ok {
+			url := fmt.Sprintf("%s/webhook?uid=%s&key=%s", publicURL, uid, userKey)
+			msg := fmt.Sprintf("💳 *Payments Webhook (Stripe, Razorpay, Shopify)*\n\n`%s`\n\n📌 *How to use:*\n1. In your payment gateway developer settings, add this webhook.\n2. Listen for events like `payment.succeeded` or `order.created`.\n3. Formatted customer transaction cards will arrive directly in this chat.", url)
+			go sendTelegram(chatIDStr, msg)
+		}
+		return
+	}
+
+	if strings.HasPrefix(text, "/zapier") || strings.HasPrefix(text, "/make") {
+		if uid, userKey, ok := getUserKeys(); ok {
+			url := fmt.Sprintf("%s/webhook?uid=%s&key=%s", publicURL, uid, userKey)
+			msg := fmt.Sprintf("⚡ *Zapier & Make.com Webhook URL*\n\n`%s`\n\n📌 *How to use:*\n1. In Zapier or Make, add a *Webhook (POST)* action.\n2. Paste this URL as the destination.\n3. Forward forms, Google Sheets rows, or CRM events directly to Telegram.", url)
+			go sendTelegram(chatIDStr, msg)
+		}
+		return
+	}
+
+	if strings.HasPrefix(text, "/api") || strings.HasPrefix(text, "/python") || strings.HasPrefix(text, "/curl") {
+		if uid, userKey, ok := getUserKeys(); ok {
+			url := fmt.Sprintf("%s/webhook?uid=%s&key=%s", publicURL, uid, userKey)
+			msg := fmt.Sprintf("🌐 *Universal API Webhook (Python, cURL, Servers)*\n\n`%s`\n\n📌 *Quick Example:*\n```bash\ncurl -X POST \"%s\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"event\": \"backup_complete\", \"server\": \"prod-01\", \"status\": \"success\"}'\n```", url, url)
+			go sendTelegram(chatIDStr, msg)
+		}
 		return
 	}
 
@@ -524,7 +592,8 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 			"INSERT INTO user_map(uid, chat_id, user_key, updated_at) VALUES($1,$2,$3,$4)",
 			newUid, chatIDStr, newKey, time.Now().Unix(),
 		)
-		go sendTelegram(chatIDStr, buildLinkedMessage(newUid, newKey))
+		go sendTelegram(chatIDStr, "🔄 *Key Rotated Successfully!*")
+		sendAppMenu(chatIDStr)
 		return
 	}
 
@@ -541,7 +610,7 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 
 	// /more
 	if strings.HasPrefix(text, "/more") {
-		go sendTelegram(chatIDStr, "⚙️ *Other Actions*\n\n/newuid - Rotate URL\n/unlink - Delete account\n/support <message> - Contact support")
+		go sendTelegram(chatIDStr, "⚙️ *Other Actions*\n\n/myuid - List all webhook URLs\n/newuid - Rotate URL keys\n/unlink - Delete account\n/support <message> - Contact support")
 		return
 	}
 
@@ -735,24 +804,7 @@ func handleTelegram(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Updated /myuid message with dedicated URLs
-func buildLinkedMessage(uid, userKey string) string {
-	chartinkURL := fmt.Sprintf("%s/chartink?uid=%s&key=%s", publicURL, uid, userKey)
-	tradingViewURL := fmt.Sprintf("%s/tradingview?uid=%s&key=%s", publicURL, uid, userKey)
-	webhookURL := fmt.Sprintf("%s/webhook?uid=%s&key=%s", publicURL, uid, userKey)
-
-	return fmt.Sprintf(
-		"✅ *Linked Successfully!*\n\n"+
-			"📊 *Chartink (Default):*\n`%s`\n\n"+
-			"📈 *TradingView:*\n`%s`\n\n"+
-			"🌐 *Universal Webhook (GitHub, Stripe, APIs):*\n`%s`\n\n"+
-			"_Paste the corresponding URL into your alert/webhook settings._\n\n"+
-			"/stats - Usage\n/more - Actions",
-		chartinkURL, tradingViewURL, webhookURL,
-	)
-}
-
-// Existing Chartink message parser (UNTOUCHED)
+// Chartink message parser (UNTOUCHED)
 func buildMessage(body string) string {
 	body = strings.TrimSpace(body)
 	if body == "" {
