@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instant GitHub Commit & Release Alerts to Telegram | NotifyU</title>
+    <meta name="description" content="Get immediate Telegram notifications for GitHub commits, pull requests, and repository releases using NotifyU universal webhooks. Free developer setup guide.">
+    <meta name="keywords" content="github to telegram webhook, github commit notifications telegram, telegram github bot, github actions alert telegram">
+    <link rel="canonical" href="https://notifyu.me/github-to-telegram.html">
+    <meta property="og:title" content="Instant GitHub Commit & Release Alerts to Telegram">
+    <meta property="og:description" content="Route GitHub repository commits, branches, and author updates straight to Telegram in under 2 minutes.">
+    <meta property="og:url" content="https://notifyu.me/github-to-telegram.html">
+    <meta property="og:type" content="article">
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --text-dark: #0f172a;
+            --text-muted: #475569;
+            --bg-light: #f8fafc;
+            --border: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg-light); color: var(--text-muted); line-height: 1.6; }
+        header { background: #fff; border-bottom: 1px solid var(--border); padding: 16px 24px; position: sticky; top: 0; z-index: 10; }
+        .nav-container { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.25rem; font-weight: 700; color: var(--text-dark); text-decoration: none; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; margin-left: 18px; font-size: 0.95rem; font-weight: 500; }
+        .nav-links a:hover { color: var(--accent); }
+        .container { max-width: 860px; margin: 32px auto; padding: 0 20px; }
+        .card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 32px; margin-bottom: 24px; }
+        h1 { color: var(--text-dark); font-size: 2rem; margin-bottom: 12px; line-height: 1.3; }
+        h2 { color: var(--text-dark); font-size: 1.35rem; margin: 28px 0 12px; }
+        p { margin-bottom: 14px; font-size: 1rem; }
+        .step-num { display: inline-flex; width: 28px; height: 28px; border-radius: 50%; background: #f1f5f9; color: var(--text-dark); font-weight: 700; align-items: center; justify-content: center; margin-right: 8px; }
+        pre { background: #0f172a; color: #f8fafc; padding: 14px 18px; border-radius: 8px; overflow-x: auto; font-size: 0.9rem; margin: 12px 0 16px; }
+        code { background: #f1f5f9; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 0.88rem; }
+        pre code { background: none; color: inherit; padding: 0; }
+        .cta-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #0f172a; color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 1rem; transition: background 0.2s; margin-top: 10px; }
+        .cta-btn:hover { background: #334155; }
+        .badge { display: inline-block; background: #eff6ff; color: #1d4ed8; padding: 4px 10px; border-radius: 99px; font-size: 0.8rem; font-weight: 600; margin-bottom: 12px; }
+        footer { text-align: center; padding: 30px; font-size: 0.9rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="nav-container">
+        <a href="/" class="logo">NotifyU</a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/services.html">Subscriptions</a>
+            <a href="https://t.me/notifyubot" target="_blank">Telegram Bot</a>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <article class="card">
+        <span class="badge">Developer Tooling</span>
+        <h1>Receive GitHub Commits and Releases on Telegram</h1>
+        <p>Tracking repository activity, pull requests, and production deployments shouldn't require keeping an open browser tab or checking cluttered developer email inboxes. By routing GitHub webhooks to Telegram, solo developers and engineering teams receive instant push notifications whenever code is merged.</p>
+
+        <a href="https://t.me/notifyubot" target="_blank" class="cta-btn">🐙 Get GitHub Webhook on Telegram</a>
+
+        <h2>Setting Up GitHub Webhooks in 60 Seconds</h2>
+
+        <p><span class="step-num">1</span> <strong>Grab your Webhook URL from Telegram</strong></p>
+        <p>Send <code>/github</code> to <a href="https://t.me/notifyubot" target="_blank" style="color:var(--accent); font-weight:600;">@notifyubot</a>. You will receive your dedicated endpoint:</p>
+        <pre><code>https://notifyu.me/webhook?uid=YOUR_UID&key=YOUR_KEY</code></pre>
+
+        <p><span class="step-num">2</span> <strong>Add the Webhook in GitHub</strong></p>
+        <p>1. Open your repository on GitHub.<br>
+        2. Click on <strong>Settings</strong> &rarr; <strong>Webhooks</strong> &rarr; <strong>Add webhook</strong>.<br>
+        3. Paste your NotifyU URL into the <strong>Payload URL</strong> field.<br>
+        4. Set <strong>Content type</strong> to <code>application/json</code>.<br>
+        5. Under events, select <em>Just the push event</em> (or choose specific events like Releases, PRs, and Issues).<br>
+        6. Click <strong>Add webhook</strong>.</p>
+
+        <h2>What the Telegram Notification Looks Like</h2>
+        <p>Whenever you push code or merge a pull request, NotifyU immediately parses GitHub's payload and delivers a structured developer card:</p>
+
+        <pre><code>🐙 GitHub Push Alert
+━━━━━━━━━━━━━━━━━━
+• Repo: chartink-alert-sep
+• Branch: main
+• Pushed By: Developer
+• Commit: Feat: Add universal webhook routing
+━━━━━━━━━━━━━━━━━━</code></pre>
+
+        <h2>Explore More Developer Tools</h2>
+        <p>Building side projects or SaaS apps? Upgrade your development infrastructure with discounted <a href="/mongodb-credits.html" style="color:var(--accent); font-weight:600;">MongoDB Cloud Atlas Credits</a> and <a href="/framer-pro.html" style="color:var(--accent); font-weight:600;">Framer Pro Plans</a> on our <a href="/services.html" style="color:var(--accent); font-weight:600;">services store</a>.</p>
+    </article>
+</main>
+
+<footer>
+    <p>&copy; 2026 NotifyU. Lightweight Webhook-to-Telegram Relay. All rights reserved.</p>
+</footer>
+
+</body>
+</html>
